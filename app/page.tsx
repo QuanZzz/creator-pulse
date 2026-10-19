@@ -1,10 +1,11 @@
 "use client";
 
 import StatCard from "@/components/dashboard/StatCard";
-import { chartData, creators } from "@/lib/mock-data";
+import { chartData } from "@/lib/mock-data";
+import { getCreators } from "@/lib/api/creators";
+import type { Creator, Platform } from "@/types/creator";
+import { useEffect, useMemo, useState } from "react";
 import { formatNumber } from "@/lib/utils";
-import { useMemo, useState } from "react";
-import { Platform } from "@/types/creator";
 
 const platforms: ("All platforms" | Platform)[] = [
     "All platforms",
@@ -156,12 +157,46 @@ function AudienceGrowthChart({ period }: { period: string }) {
 
 export default function Home() {
     const [period, setPeriod] = useState("30 days");
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [notice, setNotice] = useState("");
+    const [creators, setCreators] = useState<Creator[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
     const [search, setSearch] = useState("");
     const [platform, setPlatform] = useState<"All platforms" | Platform>(
         "All platforms",
     );
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [notice, setNotice] = useState("");
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadCreators() {
+            try {
+                setLoading(true);
+                setError("");
+
+                const data = await getCreators();
+
+                if (!cancelled) {
+                    setCreators(data);
+                }
+            } catch {
+                if (!cancelled) {
+                    setError("Unable to load creators. Please try again.");
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        loadCreators();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const filteredCreators = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -176,7 +211,7 @@ export default function Home() {
 
             return matchesSearch && matchesPlatform;
         });
-    }, [search, platform]);
+    }, [creators, search, platform]);
 
     const showNotice = (message: string) => {
         setNotice(message);
@@ -733,80 +768,112 @@ export default function Home() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {filteredCreators.map((creator) => (
-                                            <tr
-                                                key={creator.handle}
-                                                className="transition-colors hover:bg-gray-50/70"
-                                            >
-                                                <td className="px-4 py-3.5">
-                                                    <div className="flex items-center gap-3">
-                                                        <span
-                                                            className={`flex size-9 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${creator.avatarColor}`}
-                                                        >
-                                                            {creator.initials}
-                                                        </span>
-                                                        <span>
-                                                            <span className="block text-xs font-semibold text-gray-800">
-                                                                {creator.name}
-                                                            </span>
-                                                            <span className="mt-1 block text-[11px] text-gray-400">
-                                                                {creator.handle}
-                                                            </span>
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3.5">
-                                                    <span
-                                                        className={`inline-flex rounded-md px-2.5 py-1.5 text-[10px] font-medium ${platformStyles[creator.platform]}`}
-                                                    >
-                                                        {creator.platform}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3.5 text-xs tabular-nums text-gray-700">
-                                                    {formatNumber(
-                                                        creator.followers,
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3.5 text-xs tabular-nums text-gray-700">
-                                                    {creator.engagement.toFixed(
-                                                        1,
-                                                    )}
-                                                    %
-                                                </td>
-                                                <td className="px-4 py-3.5">
-                                                    <span className="inline-flex rounded-md bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-700">
-                                                        ↗ {creator.growth}%
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3.5 text-right">
-                                                    <button
-                                                        type="button"
-                                                        aria-label={`View options for ${creator.name}`}
-                                                        onClick={() =>
-                                                            showNotice(
-                                                                `${creator.name} profile details coming soon`,
-                                                            )
-                                                        }
-                                                        className="rounded-lg px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                                                    >
-                                                        ···
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-
-                                        {filteredCreators.length === 0 && (
+                                        {loading && (
                                             <tr>
                                                 <td
                                                     colSpan={6}
                                                     className="px-4 py-12 text-center text-xs text-gray-500"
                                                 >
-                                                    No creators match your
-                                                    search. Try another name or
-                                                    platform.
+                                                    Loading creators...
                                                 </td>
                                             </tr>
                                         )}
+
+                                        {!loading && error && (
+                                            <tr>
+                                                <td
+                                                    colSpan={6}
+                                                    className="px-4 py-12 text-center text-xs text-red-600"
+                                                >
+                                                    {error}
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {!loading &&
+                                            !error &&
+                                            filteredCreators.map((creator) => (
+                                                <tr
+                                                    key={creator.handle}
+                                                    className="transition-colors hover:bg-gray-50/70"
+                                                >
+                                                    <td className="px-4 py-3.5">
+                                                        <div className="flex items-center gap-3">
+                                                            <span
+                                                                className={`flex size-9 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${creator.avatarColor}`}
+                                                            >
+                                                                {
+                                                                    creator.initials
+                                                                }
+                                                            </span>
+                                                            <span>
+                                                                <span className="block text-xs font-semibold text-gray-800">
+                                                                    {
+                                                                        creator.name
+                                                                    }
+                                                                </span>
+                                                                <span className="mt-1 block text-[11px] text-gray-400">
+                                                                    {
+                                                                        creator.handle
+                                                                    }
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3.5">
+                                                        <span
+                                                            className={`inline-flex rounded-md px-2.5 py-1.5 text-[10px] font-medium ${platformStyles[creator.platform]}`}
+                                                        >
+                                                            {creator.platform}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3.5 text-xs tabular-nums text-gray-700">
+                                                        {formatNumber(
+                                                            creator.followers,
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3.5 text-xs tabular-nums text-gray-700">
+                                                        {creator.engagement.toFixed(
+                                                            1,
+                                                        )}
+                                                        %
+                                                    </td>
+                                                    <td className="px-4 py-3.5">
+                                                        <span className="inline-flex rounded-md bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-700">
+                                                            ↗ {creator.growth}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3.5 text-right">
+                                                        <button
+                                                            type="button"
+                                                            aria-label={`View options for ${creator.name}`}
+                                                            onClick={() =>
+                                                                showNotice(
+                                                                    `${creator.name} profile details coming soon`,
+                                                                )
+                                                            }
+                                                            className="rounded-lg px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                                                        >
+                                                            ···
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+
+                                        {!loading &&
+                                            !error &&
+                                            filteredCreators.length === 0 && (
+                                                <tr>
+                                                    <td
+                                                        colSpan={6}
+                                                        className="px-4 py-12 text-center text-xs text-gray-500"
+                                                    >
+                                                        No creators match your
+                                                        search. Try another name
+                                                        or platform.
+                                                    </td>
+                                                </tr>
+                                            )}
                                     </tbody>
                                 </table>
                             </div>
