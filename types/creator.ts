@@ -1,4 +1,6 @@
 export type Platform = "Instagram" | "YouTube" | "TikTok";
+export type CreatorSortField = "followers" | "engagement" | "growth";
+export type SortDirection = "asc" | "desc";
 
 export type Creator = {
     name: string;

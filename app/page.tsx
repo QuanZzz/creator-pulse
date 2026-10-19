@@ -3,22 +3,9 @@
 import StatCard from "@/components/dashboard/StatCard";
 import { chartData } from "@/lib/mock-data";
 import { getCreators } from "@/lib/api/creators";
-import type { Creator, Platform } from "@/types/creator";
-import { useEffect, useMemo, useState } from "react";
-import { formatNumber } from "@/lib/utils";
-
-const platforms: ("All platforms" | Platform)[] = [
-    "All platforms",
-    "Instagram",
-    "YouTube",
-    "TikTok",
-];
-
-const platformStyles: Record<Platform, string> = {
-    Instagram: "bg-rose-50 text-rose-700",
-    YouTube: "bg-red-50 text-red-700",
-    TikTok: "bg-teal-50 text-teal-700",
-};
+import { useState } from "react";
+import CreatorsTable from "@/components/dashboard/CreatorsTable";
+import { useQuery } from "@tanstack/react-query";
 
 function SectionHeading({
     title,
@@ -156,62 +143,19 @@ function AudienceGrowthChart({ period }: { period: string }) {
 }
 
 export default function Home() {
+    const {
+        data: creators = [],
+        isPending: loading,
+        isError,
+        refetch,
+    } = useQuery({
+        queryKey: ["creators"],
+        queryFn: getCreators,
+    });
     const [period, setPeriod] = useState("30 days");
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [notice, setNotice] = useState("");
-    const [creators, setCreators] = useState<Creator[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [search, setSearch] = useState("");
-    const [platform, setPlatform] = useState<"All platforms" | Platform>(
-        "All platforms",
-    );
-
-    useEffect(() => {
-        let cancelled = false;
-
-        async function loadCreators() {
-            try {
-                setLoading(true);
-                setError("");
-
-                const data = await getCreators();
-
-                if (!cancelled) {
-                    setCreators(data);
-                }
-            } catch {
-                if (!cancelled) {
-                    setError("Unable to load creators. Please try again.");
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
-        }
-
-        loadCreators();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-
-    const filteredCreators = useMemo(() => {
-        const query = search.trim().toLowerCase();
-
-        return creators.filter((creator) => {
-            const matchesSearch =
-                creator.name.toLowerCase().includes(query) ||
-                creator.handle.toLowerCase().includes(query);
-
-            const matchesPlatform =
-                platform === "All platforms" || creator.platform === platform;
-
-            return matchesSearch && matchesPlatform;
-        });
-    }, [creators, search, platform]);
 
     const showNotice = (message: string) => {
         setNotice(message);
@@ -684,7 +628,7 @@ export default function Home() {
                             </article>
                         </section>
 
-                        <section
+                        {/* <section
                             className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
                             id="creators"
                         >
@@ -897,7 +841,16 @@ export default function Home() {
                                     Reset filters →
                                 </button>
                             </div>
-                        </section>
+                        </section> */}
+                        <CreatorsTable
+                            creators={creators}
+                            loading={loading}
+                            isError={isError}
+                            onRetry={() => refetch()}
+                            search={search}
+                            setSearch={setSearch}
+                            onNotice={showNotice}
+                        />
 
                         <footer className="flex flex-col gap-3 py-6 text-[10px] text-gray-400 sm:flex-row sm:items-center sm:justify-between">
                             <span>
