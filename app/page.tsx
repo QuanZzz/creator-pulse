@@ -1,145 +1,23 @@
 "use client";
 
+import StatCard from "@/components/dashboard/StatCard";
+import { chartData, creators } from "@/lib/mock-data";
+import { formatNumber } from "@/lib/utils";
 import { useMemo, useState } from "react";
+import { Platform } from "@/types/creator";
 
-type Platform = "Instagram" | "YouTube" | "TikTok";
-
-type Creator = {
-    name: string;
-    handle: string;
-    platform: Platform;
-    followers: number;
-    engagement: number;
-    growth: number;
-    initials: string;
-    avatarColor: string;
-};
-
-const creators: Creator[] = [
-    {
-        name: "Sophie Chen",
-        handle: "@sophiecreates",
-        platform: "Instagram",
-        followers: 128400,
-        engagement: 5.8,
-        growth: 12.4,
-        initials: "SC",
-        avatarColor: "bg-rose-100 text-rose-700",
-    },
-    {
-        name: "Marcus Rivera",
-        handle: "@marcusbuilds",
-        platform: "YouTube",
-        followers: 89200,
-        engagement: 7.2,
-        growth: 8.6,
-        initials: "MR",
-        avatarColor: "bg-sky-100 text-sky-700",
-    },
-    {
-        name: "Emma Wilson",
-        handle: "@emmamakes",
-        platform: "TikTok",
-        followers: 256800,
-        engagement: 6.4,
-        growth: 18.2,
-        initials: "EW",
-        avatarColor: "bg-violet-100 text-violet-700",
-    },
-    {
-        name: "Daniel Kim",
-        handle: "@danielvisuals",
-        platform: "Instagram",
-        followers: 67300,
-        engagement: 4.9,
-        growth: 5.3,
-        initials: "DK",
-        avatarColor: "bg-amber-100 text-amber-700",
-    },
-    {
-        name: "Olivia Brooks",
-        handle: "@oliviastudio",
-        platform: "YouTube",
-        followers: 194500,
-        engagement: 8.1,
-        growth: 15.7,
-        initials: "OB",
-        avatarColor: "bg-emerald-100 text-emerald-700",
-    },
+const platforms: ("All platforms" | Platform)[] = [
+    "All platforms",
+    "Instagram",
+    "YouTube",
+    "TikTok",
 ];
-
-const chartData: Record<string, number[]> = {
-    "7 days": [24, 30, 27, 39, 34, 45, 41, 52, 48, 60, 55, 70],
-    "30 days": [20, 28, 24, 36, 31, 44, 40, 49, 45, 62, 57, 76],
-    "90 days": [12, 19, 17, 29, 26, 36, 33, 47, 42, 57, 63, 82],
-};
-
-const formatNumber = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-        notation: "compact",
-        maximumFractionDigits: 1,
-    }).format(value);
 
 const platformStyles: Record<Platform, string> = {
     Instagram: "bg-rose-50 text-rose-700",
     YouTube: "bg-red-50 text-red-700",
     TikTok: "bg-teal-50 text-teal-700",
 };
-
-function StatCard({
-    title,
-    value,
-    change,
-    icon,
-    iconClass,
-    bars,
-    barClass,
-}: {
-    title: string;
-    value: string;
-    change: string;
-    icon: string;
-    iconClass: string;
-    bars: number[];
-    barClass: string;
-}) {
-    return (
-        <article className="relative min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
-            <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-gray-500 sm:text-sm">
-                    {title}
-                </p>
-                <span
-                    className={`flex size-9 shrink-0 items-center justify-center rounded-xl text-lg ${iconClass}`}
-                    aria-hidden="true"
-                >
-                    {icon}
-                </span>
-            </div>
-
-            <p className="mt-4 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-                {value}
-            </p>
-
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-semibold text-emerald-600">
-                    ↗ {change}
-                </span>
-                <span className="text-gray-400">vs. last month</span>
-            </div>
-
-            <div className="mt-4 flex h-8 items-end gap-1" aria-hidden="true">
-                {bars.map((height, index) => (
-                    <span
-                        key={index}
-                        className={`min-w-0 flex-1 rounded-t-sm ${barClass}`}
-                        style={{ height: `${height}%` }}
-                    />
-                ))}
-            </div>
-        </article>
-    );
-}
 
 function SectionHeading({
     title,
@@ -279,7 +157,9 @@ function AudienceGrowthChart({ period }: { period: string }) {
 export default function Home() {
     const [period, setPeriod] = useState("30 days");
     const [search, setSearch] = useState("");
-    const [platform, setPlatform] = useState("All platforms");
+    const [platform, setPlatform] = useState<"All platforms" | Platform>(
+        "All platforms",
+    );
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [notice, setNotice] = useState("");
 
@@ -796,9 +676,19 @@ export default function Home() {
                                     <select
                                         aria-label="Filter by platform"
                                         value={platform}
-                                        onChange={(event) =>
-                                            setPlatform(event.target.value)
-                                        }
+                                        onChange={(event) => {
+                                            const value = event.target.value;
+
+                                            if (
+                                                platforms.includes(
+                                                    value as (typeof platforms)[number],
+                                                )
+                                            ) {
+                                                setPlatform(
+                                                    value as (typeof platforms)[number],
+                                                );
+                                            }
+                                        }}
                                         className="h-9 min-w-0 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-600 outline-none focus:border-violet-400"
                                     >
                                         <option>All platforms</option>
