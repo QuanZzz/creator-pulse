@@ -64,7 +64,7 @@ export default function CreatorsTable({
     const [pageSize, setPageSize] = useState(5);
 
     const filteredCreators = useMemo(() => {
-        const query = search.trim().toLowerCase();
+        const query = search.trim().replace(/^@/, "").toLowerCase();
 
         return creators.filter((creator) => {
             const matchesSearch =
@@ -267,7 +267,7 @@ export default function CreatorsTable({
                                                     {creator.name}
                                                 </span>
                                                 <span className="mt-1 block text-[11px] text-gray-400">
-                                                    {creator.handle}
+                                                    @{creator.handle}
                                                 </span>
                                             </span>
                                         </div>

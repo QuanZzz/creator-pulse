@@ -2,10 +2,11 @@
 
 import StatCard from "@/components/dashboard/StatCard";
 import { chartData } from "@/lib/mock-data";
-import { getCreators } from "@/lib/api/creators";
+import { createCreator, getCreators } from "@/lib/api/creators";
 import { useState } from "react";
 import CreatorsTable from "@/components/dashboard/CreatorsTable";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import AddCreatorModal from "@/components/dashboard/AddCreatorModal";
 
 function SectionHeading({
     title,
@@ -152,10 +153,20 @@ export default function Home() {
         queryKey: ["creators"],
         queryFn: getCreators,
     });
+    const queryClient = useQueryClient();
+    const createCreatorMutation = useMutation({
+        mutationFn: createCreator,
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["creators"] });
+            setIsAddCreatorOpen(false);
+            showNotice("Creator added successfully!");
+        },
+    });
     const [period, setPeriod] = useState("30 days");
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [notice, setNotice] = useState("");
     const [search, setSearch] = useState("");
+    const [isAddCreatorOpen, setIsAddCreatorOpen] = useState(false);
 
     const showNotice = (message: string) => {
         setNotice(message);
@@ -414,11 +425,7 @@ export default function Home() {
 
                             <button
                                 type="button"
-                                onClick={() =>
-                                    showNotice(
-                                        "Creator onboarding will be available soon",
-                                    )
-                                }
+                                onClick={() => setIsAddCreatorOpen(true)}
                                 className="flex h-10 items-center gap-2 rounded-lg bg-violet-600 px-4 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-violet-700"
                             >
                                 <span className="text-base">＋</span> Add
@@ -628,220 +635,6 @@ export default function Home() {
                             </article>
                         </section>
 
-                        {/* <section
-                            className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
-                            id="creators"
-                        >
-                            <div className="flex flex-col gap-4 p-4 sm:p-6 xl:flex-row xl:items-center xl:justify-between">
-                                <SectionHeading
-                                    title={`Your creators (${filteredCreators.length})`}
-                                    description="Manage and monitor your creator partnerships."
-                                />
-
-                                <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-[minmax(0,1fr)_auto] sm:flex sm:flex-wrap sm:items-center">
-                                    <label className="flex h-9 min-w-0 items-center gap-2 rounded-lg border border-gray-200 px-3 text-gray-400 sm:w-44">
-                                        <span className="text-base">⌕</span>
-                                        <input
-                                            aria-label="Filter creator list"
-                                            placeholder="Search creators"
-                                            value={search}
-                                            onChange={(event) =>
-                                                setSearch(event.target.value)
-                                            }
-                                            className="min-w-0 flex-1 bg-transparent text-xs text-gray-900 outline-none placeholder:text-gray-400"
-                                        />
-                                    </label>
-
-                                    <select
-                                        aria-label="Filter by platform"
-                                        value={platform}
-                                        onChange={(event) => {
-                                            const value = event.target.value;
-
-                                            if (
-                                                platforms.includes(
-                                                    value as (typeof platforms)[number],
-                                                )
-                                            ) {
-                                                setPlatform(
-                                                    value as (typeof platforms)[number],
-                                                );
-                                            }
-                                        }}
-                                        className="h-9 min-w-0 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-600 outline-none focus:border-violet-400"
-                                    >
-                                        <option>All platforms</option>
-                                        <option>Instagram</option>
-                                        <option>YouTube</option>
-                                        <option>TikTok</option>
-                                    </select>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            showNotice(
-                                                "Report export will be available soon",
-                                            )
-                                        }
-                                        className="h-9 rounded-lg border border-gray-200 px-3 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                    >
-                                        ↓ Export
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-[700px] border-collapse text-left">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            {[
-                                                "CREATOR",
-                                                "PLATFORM",
-                                                "FOLLOWERS",
-                                                "ENGAGEMENT",
-                                                "GROWTH",
-                                                "",
-                                            ].map((heading) => (
-                                                <th
-                                                    key={heading || "actions"}
-                                                    className="px-4 py-3 text-[10px] font-semibold tracking-wide text-gray-400"
-                                                >
-                                                    {heading}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {loading && (
-                                            <tr>
-                                                <td
-                                                    colSpan={6}
-                                                    className="px-4 py-12 text-center text-xs text-gray-500"
-                                                >
-                                                    Loading creators...
-                                                </td>
-                                            </tr>
-                                        )}
-
-                                        {!loading && error && (
-                                            <tr>
-                                                <td
-                                                    colSpan={6}
-                                                    className="px-4 py-12 text-center text-xs text-red-600"
-                                                >
-                                                    {error}
-                                                </td>
-                                            </tr>
-                                        )}
-
-                                        {!loading &&
-                                            !error &&
-                                            filteredCreators.map((creator) => (
-                                                <tr
-                                                    key={creator.handle}
-                                                    className="transition-colors hover:bg-gray-50/70"
-                                                >
-                                                    <td className="px-4 py-3.5">
-                                                        <div className="flex items-center gap-3">
-                                                            <span
-                                                                className={`flex size-9 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${creator.avatarColor}`}
-                                                            >
-                                                                {
-                                                                    creator.initials
-                                                                }
-                                                            </span>
-                                                            <span>
-                                                                <span className="block text-xs font-semibold text-gray-800">
-                                                                    {
-                                                                        creator.name
-                                                                    }
-                                                                </span>
-                                                                <span className="mt-1 block text-[11px] text-gray-400">
-                                                                    {
-                                                                        creator.handle
-                                                                    }
-                                                                </span>
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3.5">
-                                                        <span
-                                                            className={`inline-flex rounded-md px-2.5 py-1.5 text-[10px] font-medium ${platformStyles[creator.platform]}`}
-                                                        >
-                                                            {creator.platform}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3.5 text-xs tabular-nums text-gray-700">
-                                                        {formatNumber(
-                                                            creator.followers,
-                                                        )}
-                                                    </td>
-                                                    <td className="px-4 py-3.5 text-xs tabular-nums text-gray-700">
-                                                        {creator.engagement.toFixed(
-                                                            1,
-                                                        )}
-                                                        %
-                                                    </td>
-                                                    <td className="px-4 py-3.5">
-                                                        <span className="inline-flex rounded-md bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-700">
-                                                            ↗ {creator.growth}%
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3.5 text-right">
-                                                        <button
-                                                            type="button"
-                                                            aria-label={`View options for ${creator.name}`}
-                                                            onClick={() =>
-                                                                showNotice(
-                                                                    `${creator.name} profile details coming soon`,
-                                                                )
-                                                            }
-                                                            className="rounded-lg px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                                                        >
-                                                            ···
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-
-                                        {!loading &&
-                                            !error &&
-                                            filteredCreators.length === 0 && (
-                                                <tr>
-                                                    <td
-                                                        colSpan={6}
-                                                        className="px-4 py-12 text-center text-xs text-gray-500"
-                                                    >
-                                                        No creators match your
-                                                        search. Try another name
-                                                        or platform.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-4 text-[11px] text-gray-500 sm:px-6">
-                                <span>
-                                    Showing{" "}
-                                    <strong className="text-gray-800">
-                                        {filteredCreators.length}
-                                    </strong>{" "}
-                                    of {creators.length} creators
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSearch("");
-                                        setPlatform("All platforms");
-                                    }}
-                                    className="font-semibold text-violet-700 hover:text-violet-800"
-                                >
-                                    Reset filters →
-                                </button>
-                            </div>
-                        </section> */}
                         <CreatorsTable
                             creators={creators}
                             loading={loading}
@@ -874,6 +667,23 @@ export default function Home() {
                     {notice}
                 </div>
             )}
+
+            <AddCreatorModal
+                isOpen={isAddCreatorOpen}
+                onClose={() => {
+                    createCreatorMutation.reset();
+                    setIsAddCreatorOpen(false);
+                }}
+                onSubmit={(creator) =>
+                    createCreatorMutation.mutateAsync(creator)
+                }
+                isSubmitting={createCreatorMutation.isPending}
+                error={
+                    createCreatorMutation.error instanceof Error
+                        ? createCreatorMutation.error.message
+                        : null
+                }
+            />
         </main>
     );
 }
