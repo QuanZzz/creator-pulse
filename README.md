@@ -2,7 +2,7 @@
 
 A creator analytics dashboard for tracking social media creators across Instagram, YouTube and TikTok.
 
-**Live demo:** _add your Vercel URL here_
+**Live demo:** https://creator-pulse-nine.vercel.app/
 
 ![CreatorPulse dashboard](./public/screenshot.png)
 
