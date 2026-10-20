@@ -7,6 +7,18 @@ import { useState } from "react";
 import CreatorsTable from "@/components/dashboard/CreatorsTable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AddCreatorModal from "@/components/dashboard/AddCreatorModal";
+import type { Platform } from "@/types/creator";
+
+const compactNumber = new Intl.NumberFormat("en", {
+    notation: "compact",
+    maximumFractionDigits: 2,
+});
+
+const platformStyles: { platform: Platform; color: string }[] = [
+    { platform: "Instagram", color: "bg-violet-500" },
+    { platform: "YouTube", color: "bg-rose-400" },
+    { platform: "TikTok", color: "bg-teal-400" },
+];
 
 function SectionHeading({
     title,
@@ -32,7 +44,13 @@ function SectionHeading({
     );
 }
 
-function AudienceGrowthChart({ period }: { period: string }) {
+function AudienceGrowthChart({
+    period,
+    totalFollowers,
+}: {
+    period: string;
+    totalFollowers: number;
+}) {
     const values = chartData[period];
     const points = values
         .map(
@@ -48,7 +66,7 @@ function AudienceGrowthChart({ period }: { period: string }) {
             <div className="mb-4">
                 <div className="flex flex-wrap items-center gap-2">
                     <p className="text-2xl font-bold tracking-tight text-gray-900">
-                        746,280
+                        {totalFollowers.toLocaleString("en-US")}
                     </p>
                     <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
                         ↗ 12.8%
@@ -59,10 +77,10 @@ function AudienceGrowthChart({ period }: { period: string }) {
 
             <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3">
                 <div className="flex flex-col justify-between pb-1 text-[10px] text-gray-400">
-                    <span>800K</span>
-                    <span>600K</span>
-                    <span>400K</span>
-                    <span>200K</span>
+                    <span>2M</span>
+                    <span>1.5M</span>
+                    <span>1M</span>
+                    <span>500K</span>
                     <span>0</span>
                 </div>
 
@@ -173,6 +191,39 @@ export default function Home() {
         window.setTimeout(() => setNotice(""), 2500);
     };
 
+    const stats = (() => {
+        const totalFollowers = creators.reduce(
+            (sum, creator) => sum + creator.followers,
+            0,
+        );
+
+        const avgEngagement = creators.length
+            ? creators.reduce((sum, creator) => sum + creator.engagement, 0) /
+              creators.length
+            : 0;
+
+        const platforms = platformStyles.map(({ platform, color }) => {
+            const followers = creators
+                .filter((creator) => creator.platform === platform)
+                .reduce((sum, creator) => sum + creator.followers, 0);
+
+            return {
+                platform,
+                color,
+                followers,
+                share: totalFollowers
+                    ? Math.round((followers / totalFollowers) * 100)
+                    : 0,
+            };
+        });
+
+        const topPlatform = [...platforms].sort(
+            (a, b) => b.followers - a.followers,
+        )[0];
+
+        return { totalFollowers, avgEngagement, platforms, topPlatform };
+    })();
+
     return (
         <main className="min-h-screen bg-gray-50 text-gray-900">
             <div className="lg:flex">
@@ -272,7 +323,7 @@ export default function Home() {
                                 </span>
                                 Creators
                                 <span className="ml-auto rounded-md bg-gray-100 px-2 py-1 text-[10px]">
-                                    5
+                                    {creators.length}
                                 </span>
                             </a>
                             <button
@@ -439,7 +490,9 @@ export default function Home() {
                         >
                             <StatCard
                                 title="Total followers"
-                                value="746.2K"
+                                value={compactNumber.format(
+                                    stats.totalFollowers,
+                                )}
                                 change="12.8%"
                                 icon="♙"
                                 iconClass="bg-violet-50 text-violet-600"
@@ -451,7 +504,7 @@ export default function Home() {
                             />
                             <StatCard
                                 title="Engagement rate"
-                                value="6.42%"
+                                value={`${stats.avgEngagement.toFixed(2)}%`}
                                 change="2.4%"
                                 icon="♡"
                                 iconClass="bg-rose-50 text-rose-600"
@@ -483,7 +536,7 @@ export default function Home() {
                                     </span>
                                 </div>
                                 <p className="mt-4 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-                                    24
+                                    {creators.length}
                                 </p>
                                 <div className="mt-2 flex items-center gap-2 text-xs">
                                     <span className="font-semibold text-emerald-600">
@@ -502,9 +555,11 @@ export default function Home() {
                                             {creator.initials}
                                         </span>
                                     ))}
-                                    <span className="ml-1 text-[10px] text-gray-400">
-                                        +20 more
-                                    </span>
+                                    {creators.length > 4 && (
+                                        <span className="ml-1 text-[10px] text-gray-400">
+                                            +{creators.length - 4} more
+                                        </span>
+                                    )}
                                 </div>
                             </article>
                         </section>
@@ -532,7 +587,10 @@ export default function Home() {
                                         </select>
                                     }
                                 />
-                                <AudienceGrowthChart period={period} />
+                                <AudienceGrowthChart
+                                    period={period}
+                                    totalFollowers={stats.totalFollowers}
+                                />
                             </article>
 
                             <article className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
@@ -557,7 +615,9 @@ export default function Home() {
 
                                 <div className="mt-7">
                                     <p className="text-2xl font-bold tracking-tight">
-                                        746.2K
+                                        {compactNumber.format(
+                                            stats.totalFollowers,
+                                        )}
                                     </p>
                                     <p className="mt-1 text-xs text-gray-400">
                                         Total followers
@@ -565,73 +625,69 @@ export default function Home() {
                                 </div>
 
                                 <div
-                                    className="mt-5 flex h-2.5 gap-1 overflow-hidden rounded-full"
-                                    aria-label="Instagram 46%, YouTube 32%, TikTok 22%"
+                                    className="mt-5 flex h-2.5 gap-1 overflow-hidden rounded-full bg-gray-100"
+                                    aria-label={stats.platforms
+                                        .map(
+                                            (item) =>
+                                                `${item.platform} ${item.share}%`,
+                                        )
+                                        .join(", ")}
                                 >
-                                    <span className="w-[46%] rounded-full bg-violet-500" />
-                                    <span className="w-[32%] rounded-full bg-rose-400" />
-                                    <span className="flex-1 rounded-full bg-teal-400" />
+                                    {stats.platforms.map((item) => (
+                                        <span
+                                            key={item.platform}
+                                            className={`rounded-full ${item.color}`}
+                                            style={{ width: `${item.share}%` }}
+                                        />
+                                    ))}
                                 </div>
 
                                 <div className="mt-6 grid gap-5">
-                                    {[
-                                        {
-                                            name: "Instagram",
-                                            share: "46%",
-                                            total: "343.3K",
-                                            dot: "bg-violet-500",
-                                        },
-                                        {
-                                            name: "YouTube",
-                                            share: "32%",
-                                            total: "238.8K",
-                                            dot: "bg-rose-400",
-                                        },
-                                        {
-                                            name: "TikTok",
-                                            share: "22%",
-                                            total: "164.1K",
-                                            dot: "bg-teal-400",
-                                        },
-                                    ].map((item) => (
+                                    {stats.platforms.map((item) => (
                                         <div
-                                            key={item.name}
+                                            key={item.platform}
                                             className="grid grid-cols-[minmax(0,1fr)_3rem_4rem] items-center gap-3 text-xs"
                                         >
                                             <span className="flex min-w-0 items-center gap-2 text-gray-600">
                                                 <span
-                                                    className={`size-2 shrink-0 rounded-full ${item.dot}`}
+                                                    className={`size-2 shrink-0 rounded-full ${item.color}`}
                                                 />
                                                 <span className="truncate">
-                                                    {item.name}
+                                                    {item.platform}
                                                 </span>
                                             </span>
                                             <span className="text-right font-semibold text-gray-800">
-                                                {item.share}
+                                                {item.share}%
                                             </span>
                                             <span className="text-right text-gray-500">
-                                                {item.total}
+                                                {compactNumber.format(
+                                                    item.followers,
+                                                )}
                                             </span>
                                         </div>
                                     ))}
                                 </div>
 
-                                <div className="mt-7 flex gap-3 rounded-xl bg-violet-50 p-3.5">
-                                    <span
-                                        className="text-violet-600"
-                                        aria-hidden="true"
-                                    >
-                                        ✦
-                                    </span>
-                                    <p className="text-xs leading-5 text-gray-600">
-                                        <strong className="font-semibold text-violet-800">
-                                            Instagram is your top platform.
-                                        </strong>
-                                        <br />
-                                        It accounts for nearly half of your
-                                        audience.
-                                    </p>
-                                </div>
+                                {stats.topPlatform.followers > 0 && (
+                                    <div className="mt-7 flex gap-3 rounded-xl bg-violet-50 p-3.5">
+                                        <span
+                                            className="text-violet-600"
+                                            aria-hidden="true"
+                                        >
+                                            ✦
+                                        </span>
+                                        <p className="text-xs leading-5 text-gray-600">
+                                            <strong className="font-semibold text-violet-800">
+                                                {stats.topPlatform.platform} is
+                                                your top platform.
+                                            </strong>
+                                            <br />
+                                            It accounts for{" "}
+                                            {stats.topPlatform.share}% of your
+                                            audience.
+                                        </p>
+                                    </div>
+                                )}
                             </article>
                         </section>
 
