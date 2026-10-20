@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CreatorPulse
 
-## Getting Started
+A creator analytics dashboard for tracking social media creators across Instagram, YouTube and TikTok.
 
-First, run the development server:
+**Live demo:** _add your Vercel URL here_
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+![CreatorPulse dashboard](./public/screenshot.png)
+
+## Overview
+
+CreatorPulse is a portfolio project that shows how I build a production-style frontend feature end to end: typed data models, an API layer, server-state management, accessible forms, and responsive layouts.
+
+## Features
+
+- **Dashboard overview** – summary stat cards and a growth chart
+- **Creators table** – search by name or handle, filter by platform, sort by followers / engagement / growth, and paginate results
+- **Add creator** – modal form with client- and server-side validation, duplicate detection per platform, pending and error states
+- **Server state with TanStack Query** – cached queries, mutations, and automatic table refresh after a creator is added
+- **Loading, empty and error states** – including a retry action when the API request fails
+- **Responsive and accessible UI** – works from mobile to desktop, with labelled inputs, ARIA roles and keyboard-friendly dialogs
+
+## Tech stack
+
+- [Next.js](https://nextjs.org/) (App Router)
+- TypeScript
+- Tailwind CSS
+- TanStack Query
+- Next.js Route Handlers as a mock REST API
+
+## Project structure
+
+```
+app/
+  api/creators/route.ts   # GET and POST endpoints (mock API)
+  page.tsx                # Dashboard page
+components/
+  dashboard/              # StatCard, CreatorsTable, AddCreatorModal, ...
+lib/
+  api/creators.ts         # Typed API client (getCreators, createCreator)
+  mock-data.ts            # Seed data
+  utils.ts
+types/
+  creator.ts              # Shared domain types
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+yarn install
+yarn dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+Other scripts:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+yarn lint
+yarn build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Implementation notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **API validation:** the `POST /api/creators` handler validates the request body, normalizes the handle (strips a leading `@`, case-insensitive comparison), and returns `400` for invalid input, `409` for duplicates and `201` on success.
+- **Mutation flow:** the modal awaits the mutation result. The form only resets on success; on failure it stays open and shows the error returned by the API.
+- **Demo data:** new creators are stored in server memory, so they reset when the server restarts. In a production version this would be replaced with a database.
 
-## Deploy on Vercel
+## Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Persist creators in a database
+- Content and analytics pages
+- Date range filters for charts
