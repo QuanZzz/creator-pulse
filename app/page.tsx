@@ -52,6 +52,11 @@ function AudienceGrowthChart({
     totalFollowers: number;
 }) {
     const values = chartData[period];
+    const lastValue = values[values.length - 1];
+    const axisMax = (totalFollowers * 100) / lastValue;
+    const axisLabels = [1, 0.75, 0.5, 0.25, 0].map((ratio) =>
+        ratio === 0 ? "0" : compactNumber.format(axisMax * ratio),
+    );
     const points = values
         .map(
             (value, index) =>
@@ -77,11 +82,9 @@ function AudienceGrowthChart({
 
             <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3">
                 <div className="flex flex-col justify-between pb-1 text-[10px] text-gray-400">
-                    <span>2M</span>
-                    <span>1.5M</span>
-                    <span>1M</span>
-                    <span>500K</span>
-                    <span>0</span>
+                    {axisLabels.map((label) => (
+                        <span key={label}>{label}</span>
+                    ))}
                 </div>
 
                 <div className="relative h-44 min-w-0 sm:h-52">
